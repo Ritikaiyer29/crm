@@ -1,0 +1,4 @@
+# Shell scripts run inside Linux containers -- CRLF breaks their #!/bin/sh
+# shebang. Force LF regardless of the cloning machine's core.autocrlf.
+*.sh text eol=lf
+Dockerfile* text eol=lf

@@ -1,4 +1,14 @@
-const API_BASE = import.meta.env.VITE_API_BASE_URL || "http://127.0.0.1:8010";
+declare global {
+  interface Window {
+    __API_BASE_URL__?: string;
+  }
+}
+
+// Runtime value (written by entrypoint.sh into /env.js at container start)
+// wins over the build-time Vite value, so one built image can be pointed at
+// a different API per deploy environment without rebuilding.
+const API_BASE =
+  window.__API_BASE_URL__ || import.meta.env.VITE_API_BASE_URL || "http://127.0.0.1:8010";
 
 export interface User {
   id: string;
