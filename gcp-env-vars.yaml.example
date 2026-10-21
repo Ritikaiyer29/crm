@@ -1,0 +1,8 @@
+# Template for `gcloud run jobs create --env-vars-file=gcp-env-vars.yaml`.
+# Copy to gcp-env-vars.yaml (gitignored) and fill in real values from your
+# local .env -- a YAML file avoids shell-escaping issues with the special
+# characters in DATABASE_URL's password that --set-env-vars=KEY=VALUE,... can
+# trip over.
+DATABASE_URL: "postgresql+psycopg2://postgres.xxxx:password@aws-0-region.pooler.supabase.com:5432/postgres"
+GROQ_API_KEY: "gsk_xxxx"
+GROQ_API_KEY_2: "gsk_xxxx"

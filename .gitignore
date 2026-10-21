@@ -3,6 +3,7 @@
 *.env
 !.env.example
 !*/.env.example
+gcp-env-vars.yaml
 
 # Python
 venv/
