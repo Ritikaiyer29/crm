@@ -70,6 +70,50 @@ export interface ComplaintStatus {
   resolved_at: string | null;
 }
 
+export interface AgentStats {
+  agent_name: string;
+  pending: number;
+  approved: number;
+  edited: number;
+  rejected: number;
+  avg_confidence: number | null;
+}
+
+export interface DashboardStats {
+  tickets: {
+    total: number;
+    open: number;
+    resolved: number;
+    overdue: number;
+    due_7d: number;
+    on_time_rate: number | null;
+    by_status: Record<string, number>;
+    by_priority: Record<string, number>;
+  };
+  weekly_volume: { week_start: string; count: number }[];
+  top_categories: { id: string; category_name: string; count: number }[];
+  agents: AgentStats[];
+  pending_approvals: number;
+  upcoming_deadlines: {
+    id: string;
+    contact_name: string;
+    category_name: string;
+    priority: string;
+    status: string;
+    regulatory_deadline: string;
+  }[];
+  recent_activity: {
+    id: string;
+    agent_name: string;
+    action_type: string;
+    approval_status: string;
+    created_at: string;
+    resolved_at: string | null;
+    ticket_id: string | null;
+    contact_name: string | null;
+  }[];
+}
+
 function getToken(): string | null {
   return localStorage.getItem("token");
 }
@@ -105,9 +149,17 @@ export function getMe(): Promise<User> {
   return request("/auth/me");
 }
 
-export function getTickets(status?: string): Promise<Ticket[]> {
-  const q = status ? `?status=${encodeURIComponent(status)}` : "";
-  return request(`/tickets${q}`);
+function query(params: Record<string, string | number | undefined>): string {
+  const search = new URLSearchParams();
+  for (const [k, v] of Object.entries(params)) if (v !== undefined && v !== "") search.set(k, String(v));
+  const qs = search.toString();
+  return qs ? `?${qs}` : "";
+}
+
+export function getTickets(
+  params: { status?: string; priority?: string; category_id?: string; q?: string; limit?: number; offset?: number } = {},
+): Promise<Ticket[]> {
+  return request(`/tickets${query(params)}`);
 }
 
 export function getTicket(id: string): Promise<TicketDetail> {
@@ -118,12 +170,14 @@ export function getCategories(): Promise<Category[]> {
   return request("/categories");
 }
 
-export function getAgentActions(params: { status?: string; agent_name?: string } = {}): Promise<AgentAction[]> {
-  const search = new URLSearchParams();
-  if (params.status) search.set("status", params.status);
-  if (params.agent_name) search.set("agent_name", params.agent_name);
-  const qs = search.toString();
-  return request(`/agent-actions${qs ? `?${qs}` : ""}`);
+export function getAgentActions(
+  params: { status?: string; agent_name?: string; limit?: number; offset?: number } = {},
+): Promise<AgentAction[]> {
+  return request(`/agent-actions${query(params)}`);
+}
+
+export function getDashboardStats(): Promise<DashboardStats> {
+  return request("/dashboard/stats");
 }
 
 export function approveAction(id: string): Promise<AgentAction> {

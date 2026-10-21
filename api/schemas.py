@@ -2,7 +2,7 @@
 from __future__ import annotations
 
 import uuid
-from datetime import datetime
+from datetime import date, datetime
 from decimal import Decimal
 from typing import Optional
 
@@ -89,6 +89,67 @@ class ComplaintSubmitOut(BaseModel):
     id: uuid.UUID
     status: str
     regulatory_deadline: Optional[datetime]
+
+
+class TicketStats(BaseModel):
+    total: int
+    open: int
+    resolved: int
+    overdue: int
+    due_7d: int
+    on_time_rate: Optional[float]
+    by_status: dict[str, int]
+    by_priority: dict[str, int]
+
+
+class WeeklyCount(BaseModel):
+    week_start: date
+    count: int
+
+
+class CategoryCount(BaseModel):
+    id: uuid.UUID
+    category_name: str
+    count: int
+
+
+class AgentStats(BaseModel):
+    agent_name: str
+    pending: int
+    approved: int
+    edited: int
+    rejected: int
+    avg_confidence: Optional[float]
+
+
+class DeadlineItem(BaseModel):
+    id: uuid.UUID
+    contact_name: str
+    category_name: str
+    priority: str
+    status: str
+    regulatory_deadline: datetime
+
+
+class RecentActivityItem(BaseModel):
+    id: uuid.UUID
+    agent_name: str
+    action_type: str
+    approval_status: str
+    created_at: datetime
+    resolved_at: Optional[datetime]
+    ticket_id: Optional[uuid.UUID]
+    contact_name: Optional[str]
+
+
+class DashboardStats(BaseModel):
+    tickets: TicketStats
+    weekly_volume: list[WeeklyCount]
+    top_categories: list[CategoryCount]
+    agents: list[AgentStats]
+    pending_approvals: int
+    upcoming_deadlines: list[DeadlineItem]
+    recent_activity: list[RecentActivityItem]
 
 
 class ComplaintStatusOut(BaseModel):

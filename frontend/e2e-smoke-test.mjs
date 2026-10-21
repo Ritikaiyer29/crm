@@ -43,13 +43,16 @@ const BASE = "http://localhost:5173";
   await page.waitForURL(BASE + "/", { timeout: 5000 });
   console.log("   Logged in, now at:", page.url());
 
-  console.log("3. Waiting for approval queue to render...");
-  await page.waitForSelector("h1");
+  console.log("3. Waiting for overview, then opening the approval queue...");
+  await page.waitForSelector(".stat-value", { timeout: 20000 });
+  await page.screenshot({ path: "e2e-02-overview.png", fullPage: true });
+  await page.click('a[href="/approvals"]');
+  await page.waitForSelector(".proposal-actions, .empty-card", { timeout: 20000 });
   const heading = await page.textContent("h1");
   console.log("   Heading:", heading);
   const cardCountBefore = await page.locator(".action-card").count();
   console.log("   Pending action cards rendered:", cardCountBefore);
-  await page.screenshot({ path: "e2e-02-approvals.png", fullPage: true });
+  await page.screenshot({ path: "e2e-02b-approvals.png", fullPage: true });
 
   if (cardCountBefore === 0) {
     console.log("   No pending actions to test approve/reject against -- skipping step 4.");
@@ -62,12 +65,12 @@ const BASE = "http://localhost:5173";
     if (enabledCount === 0) {
       console.log("   None enabled (all visible cards are legacy triage rows) -- skipping click test.");
     } else {
-      const reloadResponse = page.waitForResponse(
-        (res) => res.url().includes("/agent-actions?status=pending") && res.request().method() === "GET",
+      const approveResponse = page.waitForResponse(
+        (res) => res.url().includes("/approve") && res.request().method() === "POST",
       );
       await enabledApprove.click();
-      await reloadResponse; // wait for the actual post-approve refetch, not a guessed delay
-      await page.waitForFunction(() => !document.querySelector(".centered-message")); // loading text gone
+      await approveResponse; // the card is removed locally once the POST succeeds
+      await page.waitForSelector(".toast", { timeout: 5000 });
       const cardCountAfter = await page.locator(".action-card").count();
       console.log("   Pending action cards after approve:", cardCountBefore, "->", cardCountAfter);
       await page.screenshot({ path: "e2e-03-after-approve.png", fullPage: true });
@@ -76,13 +79,13 @@ const BASE = "http://localhost:5173";
 
   console.log("5. Navigating to Tickets page...");
   await page.click('a[href="/tickets"]');
-  await page.waitForSelector(".data-table", { timeout: 15000 });
-  const rowCount = await page.locator(".data-table tbody tr").count();
+  await page.waitForSelector(".data-table tbody tr.clickable", { timeout: 15000 });
+  const rowCount = await page.locator(".data-table tbody tr.clickable").count();
   console.log("   Ticket rows rendered:", rowCount);
   await page.screenshot({ path: "e2e-04-tickets.png", fullPage: true });
 
   console.log("6. Opening first ticket detail...");
-  await page.click(".data-table tbody tr:first-child a");
+  await page.click(".data-table tbody tr.clickable:first-child a");
   await page.waitForSelector(".narrative", { timeout: 15000 });
   const narrative = await page.textContent(".narrative");
   console.log("   Narrative:", narrative?.slice(0, 80));
