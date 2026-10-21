@@ -3,9 +3,12 @@
 # tested against a live Render deploy. It still saves re-entering every
 # field by hand in the dashboard; adjust and go.
 #
-# Three services, matched to the three deployables this repo actually
-# produces: the API (always on), the frontend (always on, static-ish), and
-# the agent runner (not a server -- runs on a schedule and exits).
+# Two services: the API and the frontend, both free on Render's web-service
+# tier. The agent runner (Dockerfile.agents) is deliberately NOT deployed as
+# a Render cron service here -- Render's cron jobs have a $1/month minimum
+# even on the free plan. Run the agent sweeps manually instead (locally, or
+# `docker run --env-file .env <image> python run_triage.py` against the prod
+# DATABASE_URL) whenever you want fresh proposals. See DEPLOY.md.
 #
 # Secrets (DATABASE_URL, GROQ_API_KEY, GROQ_API_KEY_2, JWT_SECRET) are left
 # for manual entry in the Render dashboard rather than committed here.
@@ -36,17 +39,3 @@ services:
     envVars:
       - key: API_BASE_URL
         value: https://novapay-api.onrender.com
-
-  - type: cron
-    name: novapay-agent-sweep
-    runtime: docker
-    dockerfilePath: ./Dockerfile.agents
-    dockerContext: .
-    plan: free
-    schedule: "*/15 * * * *"
-    dockerCommand: python run_followup_sweep.py
-    envVars:
-      - key: DATABASE_URL
-        sync: false
-      - key: GROQ_API_KEY
-        sync: false
