@@ -63,19 +63,29 @@ should return `{"status":"ok"}`. Then open the frontend URL and log in with
 the admin account from `create_admin_user.py` (or create a fresh one by
 running that script locally against the production `DATABASE_URL`).
 
-## 6. Running the agents (manually, to stay free)
+## 6. Running the agents
 
-No agent runs automatically against the deployed DB -- that's the deliberate
-tradeoff for not paying Render's cron minimum. Run any sweep from your own
-machine, pointed at the production database, whenever you want fresh
-proposals for the demo:
+**Triage runs automatically.** A customer submitting a complaint via
+`/submit-complaint` triggers `run_triage` as a FastAPI background task right
+after the API responds -- see `api/routers/public.py`. It still only writes
+a pending `agent_action`; nothing bypasses the approval queue. This is the
+one agent worth auto-triggering, since it's naturally tied to a single
+event (a new ticket existing).
+
+**Follow-up and sales-copilot stay manual**, to avoid Render's $1/month cron
+minimum -- those are about aging state over time (a deadline getting close,
+a deal worth nudging), not a single event, so there's no clean request to
+hang them off of. Run them from your own machine, pointed at the production
+database, whenever you want fresh proposals for the demo:
 
 ```
 docker build -t crm-agents -f Dockerfile.agents .
-docker run --rm --env-file .env crm-agents python run_triage.py --limit 20
 docker run --rm --env-file .env crm-agents python run_followup_sweep.py
 docker run --rm --env-file .env crm-agents python run_sales_copilot.py
 ```
+
+(`run_triage.py` still works the same way too, for triaging already-seeded
+tickets that predate this change.)
 
 `.env` here is your local one -- it already has the production
 `DATABASE_URL` (Supabase doesn't distinguish "local" vs "prod", there's only

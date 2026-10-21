@@ -11,6 +11,7 @@ COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
 COPY api/ ./api/
+COPY agents/ ./agents/
 COPY models.py database.py approval.py ./
 
 EXPOSE 8000

@@ -7,15 +7,31 @@ and has no account.
 """
 from __future__ import annotations
 
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
+from agents.triage_agent import run_triage
 from api.schemas import ComplaintStatusOut, ComplaintSubmitOut, ComplaintSubmitRequest
-from database import get_session
+from database import engine, get_session
 from models import Contact, GrievanceCategory, Org, Ticket
 
 router = APIRouter(prefix="/complaints", tags=["public"])
+
+
+def _trigger_triage(ticket_id: str) -> None:
+    # Runs after the response has already gone back to the customer (see
+    # BackgroundTasks below), on its own DB session rather than the
+    # request's -- that session may be mid-teardown by the time this runs,
+    # and a fresh one matches exactly how the CLI (run_triage.py) does it.
+    # Best-effort: a failed auto-triage just leaves the ticket for a manual
+    # `run_triage.py` sweep later; the customer already has their reference
+    # number regardless, so there's nothing to surface this error to.
+    with Session(engine) as session:
+        try:
+            run_triage(session, ticket_id)
+        except Exception:
+            session.rollback()
 
 # The NCH taxonomy's real catch-all category (see seed_data.py) -- the
 # correct starting category_id for a ticket nobody has triaged yet.
@@ -35,6 +51,7 @@ def _get_demo_org(session: Session) -> Org:
 @router.post("", response_model=ComplaintSubmitOut, status_code=201)
 def submit_complaint(
     payload: ComplaintSubmitRequest,
+    background_tasks: BackgroundTasks,
     session: Session = Depends(get_session),
 ) -> ComplaintSubmitOut:
     org = _get_demo_org(session)
@@ -59,6 +76,13 @@ def submit_complaint(
     session.add(ticket)
     session.commit()
     session.refresh(ticket)
+
+    # Triage runs automatically instead of waiting for someone to invoke
+    # run_triage.py by hand -- see _trigger_triage's docstring-comment above
+    # for why it's a background task on its own session rather than inline
+    # here. Still only writes a pending agent_action; the human-approval
+    # gate in approval.py is untouched.
+    background_tasks.add_task(_trigger_triage, str(ticket.id))
 
     return ComplaintSubmitOut(id=ticket.id, status=ticket.status.value, regulatory_deadline=ticket.regulatory_deadline)
 
