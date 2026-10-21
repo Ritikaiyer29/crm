@@ -89,8 +89,10 @@ docker run --rm --env-file .env crm-agents python run_sales_copilot.py
 which agent it chose. Tickets that were imported already categorized, like the
 seed data, are skipped by triage and go to follow-up or nothing.)
 
-The follow-up sweep above also goes through the router for each at-risk ticket,
-so a customer ticket whose auto-triage failed gets triaged on the next sweep.
+The follow-up sweep above also goes through the router for each at-risk ticket.
+Note the sweep only looks at tickets within 5 days of their deadline, so a new
+customer ticket whose auto-triage failed is not retried by it until about
+day 25; run `run_triage.py <ticket-id>` to triage it sooner.
 
 ### 6b. On an actual schedule, for free -- Google Cloud Run + Cloud Scheduler
 

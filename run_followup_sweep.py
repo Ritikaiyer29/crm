@@ -5,9 +5,9 @@ each, via the follow-up agent directly.
 
 Each ticket goes through the LangGraph router (agents/graph.py) rather than
 straight to the follow-up agent. The SQL filter only narrows the batch to
-at-risk tickets; the router still decides what each one needs -- usually
-follow-up, but a customer-submitted ticket whose auto-triage failed gets
-triaged first.
+at-risk tickets (within 5 days of the deadline); the router still decides what
+each one needs. That is nearly always follow-up. A customer ticket whose
+auto-triage failed would only reach the router here around day 25.
 
 This is what a scheduler (Cloud Scheduler, see DEPLOY.md) calls
 periodically; run directly otherwise.
