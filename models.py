@@ -166,8 +166,10 @@ class Ticket(Base):
     account_id: Mapped[Optional[uuid.UUID]] = mapped_column(UUID(as_uuid=True), ForeignKey("accounts.id", ondelete="SET NULL"))
     category_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), ForeignKey("grievance_categories.id"), nullable=False)
     # Immutable eval ground truth -- see schema.sql for why this is separate
-    # from category_id (which the approval flow can overwrite).
-    seeded_category_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), ForeignKey("grievance_categories.id"), nullable=False)
+    # from category_id (which the approval flow can overwrite). NULL for
+    # real customer-submitted tickets (api/routers/public.py), which have no
+    # known true category -- only synthetic seed data has ground truth.
+    seeded_category_id: Mapped[Optional[uuid.UUID]] = mapped_column(UUID(as_uuid=True), ForeignKey("grievance_categories.id"))
     company: Mapped[str] = mapped_column(Text, nullable=False)
     narrative: Mapped[str] = mapped_column(Text, nullable=False)
     status: Mapped[TicketStatus] = mapped_column(ENUM(TicketStatus, name="ticket_status"), default=TicketStatus.open)

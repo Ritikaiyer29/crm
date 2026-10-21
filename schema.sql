@@ -81,8 +81,9 @@ create table tickets (
   -- review_actions.py) -- if eval accuracy were measured against category_id
   -- instead, every approved/edited triage proposal would silently turn that
   -- ticket into a row that trivially "matches" its own agent's prediction,
-  -- inflating the metric more with every review session.
-  seeded_category_id    uuid not null references grievance_categories(id),
+  -- inflating the metric more with every review session. NULL for real
+  -- customer-submitted tickets, which have no known true category.
+  seeded_category_id    uuid references grievance_categories(id),
   company               text not null,
   narrative             text not null,
   status                ticket_status not null default 'open',

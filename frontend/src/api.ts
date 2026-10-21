@@ -54,6 +54,22 @@ export interface Category {
   category_name: string;
 }
 
+export interface ComplaintSubmitResult {
+  id: string;
+  status: string;
+  regulatory_deadline: string | null;
+}
+
+export interface ComplaintStatus {
+  id: string;
+  status: string;
+  category_name: string;
+  priority: string;
+  date_received: string;
+  regulatory_deadline: string | null;
+  resolved_at: string | null;
+}
+
 function getToken(): string | null {
   return localStorage.getItem("token");
 }
@@ -123,4 +139,20 @@ export function editAction(
   body: { category_id?: string; priority?: string; text?: string },
 ): Promise<AgentAction> {
   return request(`/agent-actions/${id}/edit`, { method: "POST", body: JSON.stringify(body) });
+}
+
+// Public, unauthenticated -- no Bearer token is attached (none exists yet
+// for a customer who hasn't logged in), and a 401 here can't happen since
+// these routes don't require one.
+export function submitComplaint(body: {
+  full_name: string;
+  email?: string;
+  phone?: string;
+  narrative: string;
+}): Promise<ComplaintSubmitResult> {
+  return request("/complaints", { method: "POST", body: JSON.stringify(body) });
+}
+
+export function getComplaintStatus(id: string): Promise<ComplaintStatus> {
+  return request(`/complaints/${encodeURIComponent(id)}`);
 }

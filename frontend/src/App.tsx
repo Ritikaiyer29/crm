@@ -6,6 +6,8 @@ import { LoginPage } from "./pages/LoginPage";
 import { ApprovalQueuePage } from "./pages/ApprovalQueuePage";
 import { TicketsPage } from "./pages/TicketsPage";
 import { TicketDetailPage } from "./pages/TicketDetailPage";
+import { SubmitComplaintPage } from "./pages/SubmitComplaintPage";
+import { ComplaintStatusPage } from "./pages/ComplaintStatusPage";
 import "./App.css";
 
 function Layout({ children }: { children: ReactNode }) {
@@ -31,6 +33,9 @@ function AppRoutes() {
   return (
     <Routes>
       <Route path="/login" element={<LoginPage />} />
+      <Route path="/submit-complaint" element={<SubmitComplaintPage />} />
+      <Route path="/complaint-status" element={<ComplaintStatusPage />} />
+      <Route path="/complaint-status/:id" element={<ComplaintStatusPage />} />
       <Route element={<ProtectedRoute />}>
         <Route
           path="/"

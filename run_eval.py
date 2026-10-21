@@ -153,7 +153,16 @@ def main() -> None:
         # --offset to correctly resume across separate invocations: Postgres
         # doesn't guarantee row order across queries without an ORDER BY, so
         # skipping "the first N" would be unsafe without one.
-        query = select(Ticket).order_by(Ticket.created_at, Ticket.id).offset(args.offset)
+        # Real customer-submitted tickets (see api/routers/public.py) have no
+        # ground truth -- seeded_category_id is NULL for those -- so exclude
+        # them rather than silently scoring against a category they were
+        # never actually labeled with.
+        query = (
+            select(Ticket)
+            .where(Ticket.seeded_category_id.isnot(None))
+            .order_by(Ticket.created_at, Ticket.id)
+            .offset(args.offset)
+        )
         if args.limit:
             query = query.limit(args.limit)
         tickets = session.scalars(query).all()

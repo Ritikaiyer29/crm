@@ -49,11 +49,14 @@ def main() -> None:
         if ticket is None:
             raise SystemExit("No matching ticket found.")
 
-        seeded_category = session.get(GrievanceCategory, ticket.category_id)
         print(f"Ticket {ticket.id}")
         print(f"Narrative: {ticket.narrative}")
-        print(f"Seeded (ground-truth) category: {seeded_category.category_name}")
-        print(f"Seeded priority: {ticket.priority.value}\n")
+        if ticket.seeded_category_id is not None:
+            seeded_category = session.get(GrievanceCategory, ticket.seeded_category_id)
+            print(f"Seeded (ground-truth) category: {seeded_category.category_name}")
+        else:
+            print("Seeded (ground-truth) category: none -- real customer-submitted ticket")
+        print(f"Current priority: {ticket.priority.value}\n")
 
         graph = build_graph(session)
         final_state = graph.invoke({"ticket_id": str(ticket.id), "route": None, "agent_action_id": None})

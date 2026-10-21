@@ -6,7 +6,7 @@ from datetime import datetime
 from decimal import Decimal
 from typing import Optional
 
-from pydantic import BaseModel, ConfigDict
+from pydantic import BaseModel, ConfigDict, Field
 
 
 class LoginRequest(BaseModel):
@@ -76,3 +76,26 @@ class EditActionRequest(BaseModel):
     category_id: Optional[uuid.UUID] = None
     priority: Optional[str] = None
     text: Optional[str] = None
+
+
+class ComplaintSubmitRequest(BaseModel):
+    full_name: str = Field(min_length=1, max_length=200)
+    email: Optional[str] = None
+    phone: Optional[str] = None
+    narrative: str = Field(min_length=20, max_length=5000)
+
+
+class ComplaintSubmitOut(BaseModel):
+    id: uuid.UUID
+    status: str
+    regulatory_deadline: Optional[datetime]
+
+
+class ComplaintStatusOut(BaseModel):
+    id: uuid.UUID
+    status: str
+    category_name: str
+    priority: str
+    date_received: datetime
+    regulatory_deadline: Optional[datetime]
+    resolved_at: Optional[datetime]

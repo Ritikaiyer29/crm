@@ -1,5 +1,5 @@
 import { useState, type FormEvent } from "react";
-import { useNavigate } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { useAuth } from "../auth";
 
 export function LoginPage() {
@@ -41,6 +41,10 @@ export function LoginPage() {
         <button type="submit" disabled={submitting}>
           {submitting ? "Signing in..." : "Sign in"}
         </button>
+        <p className="hint" style={{ marginTop: 8, marginBottom: 0 }}>
+          Customer? <Link to="/submit-complaint">Raise a complaint</Link> or{" "}
+          <Link to="/complaint-status">check status</Link>.
+        </p>
       </form>
     </div>
   );
