@@ -3,16 +3,14 @@ Batch sweep: finds every non-resolved ticket within AT_RISK_THRESHOLD_DAYS of
 its regulatory deadline (or already past it) and proposes an escalation for
 each, via the follow-up agent directly.
 
-This calls check_and_propose_followup directly rather than going through the
-router graph: the SQL filter below already knows exactly which agent this
-batch needs (follow_up), so routing through the graph's "what does this
-ticket need" dispatch would just be indirection with no benefit. The router
-earns its keep at the single-ticket entry point instead (e.g. a future
-webhook fired right after a ticket is created or updated), where the caller
-genuinely doesn't know yet whether triage or follow-up applies.
+Each ticket goes through the LangGraph router (agents/graph.py) rather than
+straight to the follow-up agent. The SQL filter only narrows the batch to
+at-risk tickets; the router still decides what each one needs -- usually
+follow-up, but a customer-submitted ticket whose auto-triage failed gets
+triaged first.
 
-This is what a scheduler (APScheduler/Celery, per the original architecture
-plan) would call periodically; run directly for now.
+This is what a scheduler (Cloud Scheduler, see DEPLOY.md) calls
+periodically; run directly otherwise.
 
 Usage:
     python run_followup_sweep.py            # every at-risk/overdue ticket
@@ -30,7 +28,8 @@ from sqlalchemy import create_engine, select
 from sqlalchemy.orm import Session
 
 load_dotenv()
-from agents.follow_up_agent import AT_RISK_THRESHOLD_DAYS, check_and_propose_followup
+from agents.follow_up_agent import AT_RISK_THRESHOLD_DAYS
+from agents.graph import build_graph
 from models import Ticket, TicketStatus
 
 if sys.stdout.encoding and sys.stdout.encoding.lower() != "utf-8":
@@ -57,15 +56,16 @@ def main() -> None:
             f"{AT_RISK_THRESHOLD_DAYS} days of (or past) their regulatory deadline."
         )
 
+        graph = build_graph(session)
         proposals = 0
         for ticket in at_risk_tickets:
-            action = check_and_propose_followup(session, str(ticket.id))
-            if action:
+            state = graph.invoke({"ticket_id": str(ticket.id), "route": None, "agent_action_id": None})
+            if state["agent_action_id"]:
                 proposals += 1
-                print(f"  [{ticket.id}] {action.action_type} proposal written ({action.id})")
+                print(f"  [{ticket.id}] routed to {state['route']}: proposal written ({state['agent_action_id']})")
 
         skipped = len(at_risk_tickets) - proposals
-        print(f"\nDone. {proposals} new follow-up proposals written to agent_actions "
+        print(f"\nDone. {proposals} new proposals written to agent_actions "
               f"({skipped} skipped -- already had a pending proposal).")
 
 

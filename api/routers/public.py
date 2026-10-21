@@ -11,7 +11,7 @@ from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
-from agents.triage_agent import run_triage
+from agents.graph import build_graph
 from api.schemas import ComplaintStatusOut, ComplaintSubmitOut, ComplaintSubmitRequest
 from database import engine, get_session
 from models import Contact, GrievanceCategory, Org, Ticket
@@ -24,12 +24,14 @@ def _trigger_triage(ticket_id: str) -> None:
     # BackgroundTasks below), on its own DB session rather than the
     # request's -- that session may be mid-teardown by the time this runs,
     # and a fresh one matches exactly how the CLI (run_triage.py) does it.
-    # Best-effort: a failed auto-triage just leaves the ticket for a manual
-    # `run_triage.py` sweep later; the customer already has their reference
+    # Goes through the LangGraph router rather than calling triage directly,
+    # so "what does this ticket need" is decided in one place for every entry
+    # point. Best-effort: a failed auto-triage just leaves the ticket for a
+    # manual `run_triage.py` later; the customer already has their reference
     # number regardless, so there's nothing to surface this error to.
     with Session(engine) as session:
         try:
-            run_triage(session, ticket_id)
+            build_graph(session).invoke({"ticket_id": ticket_id, "route": None, "agent_action_id": None})
         except Exception:
             session.rollback()
 

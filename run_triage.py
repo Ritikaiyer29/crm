@@ -61,8 +61,11 @@ def main() -> None:
         graph = build_graph(session)
         final_state = graph.invoke({"ticket_id": str(ticket.id), "route": None, "agent_action_id": None})
 
+        if final_state["agent_action_id"] is None:
+            print(f"Router sent this ticket to '{final_state['route']}' -- no triage needed, nothing written.")
+            return
         action = session.get(AgentAction, final_state["agent_action_id"])
-        print("--- Triage agent proposal (written to agent_actions, approval_status=pending) ---")
+        print(f"--- Router chose '{final_state['route']}'; proposal written to agent_actions (pending) ---")
         print(f"agent_action_id: {action.id}")
         print(f"confidence:      {action.confidence}")
         print(f"proposed_output: {action.proposed_output}")

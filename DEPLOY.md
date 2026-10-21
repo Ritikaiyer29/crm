@@ -66,9 +66,10 @@ running that script locally against the production `DATABASE_URL`).
 ## 6. Running the agents
 
 **Triage runs automatically.** A customer submitting a complaint via
-`/submit-complaint` triggers `run_triage` as a FastAPI background task right
-after the API responds -- see `api/routers/public.py`. It still only writes
-a pending `agent_action`; nothing bypasses the approval queue. This is the
+`/submit-complaint` runs the LangGraph router (`agents/graph.py`) as a FastAPI
+background task right after the API responds -- see `api/routers/public.py`.
+For a new ticket the router picks the triage agent. It still only writes a
+pending `agent_action`; nothing bypasses the approval queue. This is the
 one agent worth auto-triggering, since it's naturally tied to a single
 event (a new ticket existing).
 
@@ -84,8 +85,12 @@ docker run --rm --env-file .env crm-agents python run_followup_sweep.py
 docker run --rm --env-file .env crm-agents python run_sales_copilot.py
 ```
 
-(`run_triage.py` still works the same way too, for triaging already-seeded
-tickets that predate the auto-trigger.)
+(`run_triage.py <ticket-id>` runs the same router for one ticket and prints
+which agent it chose. Tickets that were imported already categorized, like the
+seed data, are skipped by triage and go to follow-up or nothing.)
+
+The follow-up sweep above also goes through the router for each at-risk ticket,
+so a customer ticket whose auto-triage failed gets triaged on the next sweep.
 
 ### 6b. On an actual schedule, for free -- Google Cloud Run + Cloud Scheduler
 

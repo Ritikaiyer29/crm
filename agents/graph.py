@@ -3,16 +3,16 @@ LangGraph orchestrator: router -> specialist agent(s).
 
 The router is ticket-keyed and decides, from the ticket's current state,
 which lifecycle stage it's in:
-  - never triaged                                          -> triage_agent
+  - never triaged (no triage proposal AND not imported
+    already-categorized)                                    -> triage_agent
   - triaged, and within AT_RISK_THRESHOLD_DAYS of its
     regulatory_deadline (or already past it)                -> follow_up_agent
   - anything else                                           -> nothing to do (END)
 
-This same graph is meant to be invoked two ways: once per ticket right after
-it's created (an eventual FastAPI webhook), and in a periodic sweep across
-many tickets (run_followup_sweep.py today; APScheduler/Celery later per the
-original architecture plan). The router's job is identical either way:
-"what does this ticket need right now."
+This same graph is invoked two ways: once per ticket right after it's
+created (the background task in api/routers/public.py), and in a periodic
+sweep across at-risk tickets (run_followup_sweep.py). The router's job is
+identical either way: "what does this ticket need right now."
 
 The sales copilot agent is deliberately NOT a branch of this graph -- it
 operates on a contact's deal history, not a single ticket's lifecycle, so
@@ -42,7 +42,10 @@ def build_graph(session: Session):
     def router(state: GraphState) -> GraphState:
         ticket = session.get(Ticket, state["ticket_id"])
 
-        has_triage = (
+        # Tickets imported with a ground-truth category (seed_data.py) arrive
+        # already categorized: they have no triage proposal, but sending them
+        # to triage would just re-classify them and flood the approval queue.
+        has_triage = ticket.seeded_category_id is not None or (
             session.scalar(
                 select(AgentAction).where(
                     AgentAction.ticket_id == ticket.id,
