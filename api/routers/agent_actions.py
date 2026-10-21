@@ -76,7 +76,9 @@ def list_agent_actions(
             raise HTTPException(status_code=422, detail=f"Invalid status: {status_filter!r}")
     if agent_name:
         query = query.where(AgentAction.agent_name == agent_name)
-    query = query.order_by(AgentAction.created_at).offset(offset).limit(limit)
+    # Newest first: a reviewer working this queue wants to see what just
+    # came in, not get buried behind months of accumulated test/demo data.
+    query = query.order_by(AgentAction.created_at.desc()).offset(offset).limit(limit)
     actions = session.scalars(query).all()
     return [action_out(session, a) for a in actions]
 
