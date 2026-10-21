@@ -1,0 +1,20 @@
+# Runtime dependencies for the deployed API + agent pipeline only.
+# Deliberately excludes sentence-transformers/torch/transformers: those are
+# only needed by ingest_kb.py (one-off KB embedding script, run locally
+# against Supabase, never inside the deployed container) and pypdf/faker
+# (one-off PDF parsing / seed data generation). See requirements-dev.txt.
+# Keeps the API Docker image ~150MB instead of ~2.5GB.
+fastapi==0.156.4
+uvicorn==0.54.0
+sqlalchemy==2.1.1
+psycopg2-binary==2.9.13
+pgvector==0.5.0
+pydantic==2.13.5
+python-jose==3.5.0
+bcrypt==5.0.0
+python-multipart==0.0.32
+python-dotenv==1.2.3
+langgraph==1.2.12
+langchain-core==1.6.5
+langchain-groq==1.1.3
+groq==0.37.1

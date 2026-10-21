@@ -1,0 +1,23 @@
+# Secrets
+.env
+*.env
+!.env.example
+!*/.env.example
+
+# Python
+venv/
+__pycache__/
+*.pyc
+
+# Node (frontend has its own, this covers root-level accidents)
+node_modules/
+dist/
+
+# Eval artifacts (large, regenerable)
+eval_log.csv
+eval_120b_results.txt
+
+# OS / editor
+.DS_Store
+.vscode/
+.idea/

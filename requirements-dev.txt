@@ -1,0 +1,7 @@
+# Local/offline-only extras on top of requirements.txt: KB ingestion
+# (embeddings + PDF parsing) and synthetic seed data generation.
+# Never installed in the deployed API image.
+-r requirements.txt
+sentence-transformers==6.1.0
+pypdf==6.19.0
+Faker==40.39.0

@@ -1,0 +1,9 @@
+venv/
+__pycache__/
+*.pyc
+.env
+frontend/
+data/
+eval_log.csv
+eval_120b_results.txt
+.git/

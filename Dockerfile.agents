@@ -1,0 +1,21 @@
+# Runs the agent CLI scripts (triage / follow-up sweep / sales copilot).
+# Not a server: invoked on a schedule (cron) against the same Supabase DB
+# that the API container reads from. Build once, run any of the three
+# entrypoints by overriding CMD, e.g.:
+#   docker run --env-file .env crm-agents python run_followup_sweep.py
+FROM python:3.12-slim
+
+WORKDIR /app
+
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    libpq5 \
+    && rm -rf /var/lib/apt/lists/*
+
+COPY requirements.txt .
+RUN pip install --no-cache-dir -r requirements.txt
+
+COPY agents/ ./agents/
+COPY models.py database.py approval.py ./
+COPY run_triage.py run_followup_sweep.py run_sales_copilot.py ./
+
+CMD ["python", "run_followup_sweep.py"]
