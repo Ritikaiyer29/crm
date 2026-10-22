@@ -26,6 +26,7 @@ from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 load_dotenv()
+from agents.pii import redact_text
 from models import AgentAction, ApprovalStatus, Ticket, TicketStatus
 
 GROQ_MODEL = "openai/gpt-oss-120b"
@@ -78,7 +79,7 @@ def check_and_propose_followup(session: Session, ticket_id: str) -> AgentAction 
         f"Status: {urgency}\n"
         f"Ticket status: {ticket.status.value}\n"
         f"Ticket priority: {ticket.priority.value}\n"
-        f"Complaint narrative: \"{ticket.narrative}\"\n\n"
+        f"Complaint narrative: \"{redact_text(ticket.narrative)}\"\n\n"
         "State plainly what needs to happen next and why it's urgent. If overdue, mention "
         "that the customer is now entitled to escalate directly to the RBI Ombudsman."
     )

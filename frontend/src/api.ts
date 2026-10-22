@@ -94,6 +94,7 @@ export interface DashboardStats {
   top_categories: { id: string; category_name: string; count: number }[];
   agents: AgentStats[];
   pending_approvals: number;
+  open_handoffs: number;
   upcoming_deadlines: {
     id: string;
     contact_name: string;
@@ -209,4 +210,84 @@ export function submitComplaint(body: {
 
 export function getComplaintStatus(id: string): Promise<ComplaintStatus> {
   return request(`/complaints/${encodeURIComponent(id)}`);
+}
+
+// ---------- Chat (customer, no login) ----------
+
+export interface ChatMessage {
+  id: string;
+  seq: number;
+  role: "customer" | "bot" | "admin" | "system";
+  content: string;
+  citations: { label: string }[] | null;
+  created_at: string;
+}
+
+export type ConversationStatus = "bot" | "escalated" | "resolved";
+
+export function sendChatMessage(
+  message: string,
+  conversationId: string | null,
+): Promise<{ conversation_id: string; status: ConversationStatus; messages: ChatMessage[] }> {
+  return request("/chat/messages", {
+    method: "POST",
+    body: JSON.stringify({ message, conversation_id: conversationId }),
+  });
+}
+
+export function pollChat(
+  conversationId: string,
+  afterSeq: number,
+): Promise<{ status: ConversationStatus; messages: ChatMessage[] }> {
+  return request(`/chat/conversations/${encodeURIComponent(conversationId)}/messages?after_seq=${afterSeq}`);
+}
+
+// ---------- Conversations (staff inbox) ----------
+
+export interface ConversationItem {
+  id: string;
+  status: ConversationStatus;
+  escalation_reason: string | null;
+  flags: string[];
+  summary: string | null;
+  last_message_preview: string;
+  last_message_role: string;
+  message_count: number;
+  last_message_at: string;
+  escalated_at: string | null;
+  assigned_to_email: string | null;
+}
+
+export interface StaffMessage extends ChatMessage {
+  author_email: string | null;
+}
+
+export interface ConversationDetail {
+  id: string;
+  status: ConversationStatus;
+  escalation_reason: string | null;
+  flags: string[];
+  summary: string | null;
+  draft_reply: string | null;
+  assigned_to_email: string | null;
+  created_at: string;
+  escalated_at: string | null;
+  resolved_at: string | null;
+  messages: StaffMessage[];
+}
+
+export function getConversations(params: { status?: string } = {}): Promise<ConversationItem[]> {
+  return request(`/conversations${query(params)}`);
+}
+
+export function getConversation(id: string): Promise<ConversationDetail> {
+  return request(`/conversations/${id}`);
+}
+
+export function replyToConversation(id: string, content: string): Promise<StaffMessage> {
+  return request(`/conversations/${id}/reply`, { method: "POST", body: JSON.stringify({ content }) });
+}
+
+export function resolveConversation(id: string): Promise<ConversationDetail> {
+  return request(`/conversations/${id}/resolve`, { method: "POST" });
 }

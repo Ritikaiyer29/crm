@@ -14,7 +14,7 @@ from decimal import Decimal
 from typing import Optional
 
 from sqlalchemy import (
-    ForeignKey, String, Text, Numeric, Integer, Boolean, Date, DateTime,
+    BigInteger, ForeignKey, Identity, String, Text, Numeric, Integer, Boolean, Date, DateTime,
     func,
 )
 from sqlalchemy.dialects.postgresql import UUID, JSONB, ENUM
@@ -89,6 +89,19 @@ class ApprovalStatus(str, enum.Enum):
     rejected = "rejected"
     edited = "edited"
     auto_approved = "auto_approved"
+
+
+class ConversationStatus(str, enum.Enum):
+    bot = "bot"
+    escalated = "escalated"
+    resolved = "resolved"
+
+
+class MessageRole(str, enum.Enum):
+    customer = "customer"
+    bot = "bot"
+    admin = "admin"
+    system = "system"
 
 
 class UserRole(str, enum.Enum):
@@ -255,3 +268,36 @@ class KBChunk(Base):
     chunk_index: Mapped[int] = mapped_column(Integer, nullable=False)
     chunk_text: Mapped[str] = mapped_column(Text, nullable=False)
     embedding: Mapped[Optional[list[float]]] = mapped_column(Vector(384))
+
+
+class Conversation(Base):
+    __tablename__ = "conversations"
+
+    id: Mapped[uuid.UUID] = uuid_pk()
+    org_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), ForeignKey("orgs.id", ondelete="CASCADE"), nullable=False)
+    status: Mapped[ConversationStatus] = mapped_column(ENUM(ConversationStatus, name="conversation_status"), default=ConversationStatus.bot)
+    escalation_reason: Mapped[Optional[str]] = mapped_column(Text)
+    escalation_flags: Mapped[Optional[dict]] = mapped_column(JSONB)
+    summary: Mapped[Optional[str]] = mapped_column(Text)
+    draft_reply: Mapped[Optional[str]] = mapped_column(Text)
+    assigned_to: Mapped[Optional[uuid.UUID]] = mapped_column(UUID(as_uuid=True), ForeignKey("app_users.id"))
+    state: Mapped[dict] = mapped_column(JSONB, default=dict)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
+    updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
+    escalated_at: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True))
+    resolved_at: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True))
+    last_message_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
+
+
+class Message(Base):
+    __tablename__ = "messages"
+
+    id: Mapped[uuid.UUID] = uuid_pk()
+    seq: Mapped[int] = mapped_column(BigInteger, Identity(always=True), nullable=False)
+    conversation_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), ForeignKey("conversations.id", ondelete="CASCADE"), nullable=False)
+    role: Mapped[MessageRole] = mapped_column(ENUM(MessageRole, name="message_role"), nullable=False)
+    content: Mapped[str] = mapped_column(Text, nullable=False)
+    citations: Mapped[Optional[list]] = mapped_column(JSONB)
+    meta: Mapped[Optional[dict]] = mapped_column(JSONB)
+    author_id: Mapped[Optional[uuid.UUID]] = mapped_column(UUID(as_uuid=True), ForeignKey("app_users.id"))
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())

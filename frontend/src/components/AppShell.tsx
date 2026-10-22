@@ -47,6 +47,8 @@ export function AppShell() {
 
   useEffect(() => {
     reload();
+    const timer = setInterval(reload, 30000);
+    return () => clearInterval(timer);
   }, [reload]);
 
   useEffect(() => setMenuOpen(false), [location.pathname]);
@@ -69,6 +71,7 @@ export function AppShell() {
             <div className="nav-section">Workspace</div>
             <NavItem to="/" end icon="grid" label="Overview" />
             <NavItem to="/approvals" icon="inbox" label="Approvals" count={stats?.pending_approvals} />
+            <NavItem to="/conversations" icon="chat" label="Conversations" count={stats?.open_handoffs} />
             <NavItem to="/tickets" icon="ticket" label="Tickets" />
 
             <div className="nav-section">Customer portal</div>

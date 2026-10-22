@@ -1,9 +1,11 @@
 # Runtime dependencies for the deployed API + agent pipeline only.
+# fastembed (ONNX) embeds chat questions at request time with the same
+# all-MiniLM-L6-v2 model the KB was ingested with, without torch.
 # Deliberately excludes sentence-transformers/torch/transformers: those are
 # only needed by ingest_kb.py (one-off KB embedding script, run locally
 # against Supabase, never inside the deployed container) and pypdf/faker
 # (one-off PDF parsing / seed data generation). See requirements-dev.txt.
-# Keeps the API Docker image ~150MB instead of ~2.5GB.
+# Keeps the API Docker image around 800MB instead of several GB.
 fastapi==0.156.4
 uvicorn==0.54.0
 sqlalchemy==2.1.1
@@ -18,3 +20,4 @@ langgraph==1.2.12
 langchain-core==1.6.5
 langchain-groq==1.1.3
 groq==0.37.1
+fastembed==0.9.0

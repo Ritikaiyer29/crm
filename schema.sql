@@ -211,3 +211,40 @@ insert into grievance_categories (category_name, sector, typical_share) values
   ('KYC details not linked or incorrectly updated',                 'banking', 1.3),
   ('Promotional or recovery calls received from bank',              'banking', 0.9),
   ('Other',                                                         'banking', 9.6);
+
+-- ============================================================
+-- Chat: customer conversations and the admin handoff inbox
+-- ============================================================
+create type conversation_status as enum ('bot', 'escalated', 'resolved');
+create type message_role        as enum ('customer', 'bot', 'admin', 'system');
+
+create table conversations (
+  id                uuid primary key default gen_random_uuid(),
+  org_id            uuid not null references orgs(id) on delete cascade,
+  status            conversation_status not null default 'bot',
+  escalation_reason text,
+  escalation_flags  jsonb,                 -- which handoff rules fired
+  summary           text,                  -- AI summary shown to the admin
+  draft_reply       text,                  -- AI draft the admin can edit before sending
+  assigned_to       uuid references app_users(id),
+  state             jsonb not null default '{}'::jsonb,   -- per-conversation counters (failed turns, etc.)
+  created_at        timestamptz not null default now(),
+  updated_at        timestamptz not null default now(),
+  escalated_at      timestamptz,
+  resolved_at       timestamptz,
+  last_message_at   timestamptz not null default now()
+);
+create index idx_conversations_status on conversations(status, last_message_at desc);
+
+create table messages (
+  id               uuid primary key default gen_random_uuid(),
+  seq              bigint generated always as identity,   -- total order; created_at ties inside one transaction
+  conversation_id  uuid not null references conversations(id) on delete cascade,
+  role             message_role not null,
+  content          text not null,
+  citations        jsonb,                  -- [{label, source}] for bot answers
+  meta             jsonb,                  -- intent, risk flags, retrieval scores
+  author_id        uuid references app_users(id),
+  created_at       timestamptz not null default now()
+);
+create index idx_messages_conversation on messages(conversation_id, seq);

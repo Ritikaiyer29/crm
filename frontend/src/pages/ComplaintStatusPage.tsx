@@ -1,6 +1,7 @@
 import { useEffect, useState, type FormEvent } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import { getComplaintStatus, type ComplaintStatus } from "../api";
+import { ChatWidget } from "../components/ChatWidget";
 
 function formatDate(value: string | null): string {
   if (!value) return "--";
@@ -71,6 +72,7 @@ export function ComplaintStatusPage() {
           Need to raise a new complaint? <Link to="/submit-complaint">Start here</Link>.
         </p>
       </div>
+      <ChatWidget />
     </div>
   );
 }

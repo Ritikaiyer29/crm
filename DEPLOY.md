@@ -63,6 +63,30 @@ should return `{"status":"ok"}`. Then open the frontend URL and log in with
 the admin account from `create_admin_user.py` (or create a fresh one by
 running that script locally against the production `DATABASE_URL`).
 
+## 5b. Chatbot setup
+
+The customer chatbot and the staff Conversations inbox need three things beyond
+the steps above:
+
+1. **Tables.** Run the "Chat" section at the bottom of `schema.sql` (creates
+   `conversations` and `messages`). The shared Supabase database already has
+   them if you applied it from this repo.
+2. **Help-guide knowledge.** Run `python seed_help_kb.py` once. It adds the
+   NovaPay help guide next to the RBI Ombudsman clauses so the bot can answer
+   practical questions. Re-running replaces the guide it added before.
+3. **Nothing new in the Render dashboard.** The API image downloads its
+   embedding model at build time (`FASTEMBED_CACHE_PATH`), and uses the same
+   `GROQ_API_KEY` as triage. Optional: `CHAT_MODEL` changes the chat model, and
+   `GROQ_API_KEY_2` is tried if the first key fails.
+
+Measured locally in the API container: about 91 MB idle and 256 MB after the
+embedding model loads and two chats, under Render's free 512 MB limit. The
+image itself is around 800 MB uncompressed.
+
+Public chat and complaint endpoints are rate limited per client IP in process
+memory (see `api/ratelimit.py`), which is right for one instance. With more than
+one instance the limiter would need a shared store.
+
 ## 6. Running the agents
 
 **Triage runs automatically.** A customer submitting a complaint via

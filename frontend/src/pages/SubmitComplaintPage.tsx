@@ -1,6 +1,7 @@
 import { useState, type FormEvent } from "react";
 import { Link } from "react-router-dom";
 import { submitComplaint, type ComplaintSubmitResult } from "../api";
+import { ChatWidget } from "../components/ChatWidget";
 
 export function SubmitComplaintPage() {
   const [fullName, setFullName] = useState("");
@@ -53,6 +54,7 @@ export function SubmitComplaintPage() {
             <button type="button">Check status now</button>
           </Link>
         </div>
+        <ChatWidget />
       </div>
     );
   }
@@ -95,6 +97,7 @@ export function SubmitComplaintPage() {
           Bank staff: <Link to="/login">sign in</Link>.
         </p>
       </form>
+      <ChatWidget />
     </div>
   );
 }

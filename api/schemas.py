@@ -148,6 +148,7 @@ class DashboardStats(BaseModel):
     top_categories: list[CategoryCount]
     agents: list[AgentStats]
     pending_approvals: int
+    open_handoffs: int = 0
     upcoming_deadlines: list[DeadlineItem]
     recent_activity: list[RecentActivityItem]
 
@@ -160,3 +161,68 @@ class ComplaintStatusOut(BaseModel):
     date_received: datetime
     regulatory_deadline: Optional[datetime]
     resolved_at: Optional[datetime]
+
+
+# ---------- Chat (customer-facing) ----------
+
+class ChatMessageIn(BaseModel):
+    conversation_id: Optional[uuid.UUID] = None
+    message: str = Field(min_length=1, max_length=1000)
+
+
+class ChatMessageOut(BaseModel):
+    id: uuid.UUID
+    seq: int
+    role: str                       # customer | bot | admin | system
+    content: str
+    citations: Optional[list[dict]] = None
+    created_at: datetime
+
+
+class ChatReplyOut(BaseModel):
+    conversation_id: uuid.UUID
+    status: str                     # bot | escalated | resolved
+    messages: list[ChatMessageOut]
+
+
+class ChatPollOut(BaseModel):
+    status: str
+    messages: list[ChatMessageOut]
+
+
+# ---------- Conversations (staff inbox) ----------
+
+class ConversationListItem(BaseModel):
+    id: uuid.UUID
+    status: str
+    escalation_reason: Optional[str]
+    flags: list[str]
+    summary: Optional[str]
+    last_message_preview: str
+    last_message_role: str
+    message_count: int
+    last_message_at: datetime
+    escalated_at: Optional[datetime]
+    assigned_to_email: Optional[str]
+
+
+class StaffMessageOut(ChatMessageOut):
+    author_email: Optional[str] = None
+
+
+class ConversationDetail(BaseModel):
+    id: uuid.UUID
+    status: str
+    escalation_reason: Optional[str]
+    flags: list[str]
+    summary: Optional[str]
+    draft_reply: Optional[str]
+    assigned_to_email: Optional[str]
+    created_at: datetime
+    escalated_at: Optional[datetime]
+    resolved_at: Optional[datetime]
+    messages: list[StaffMessageOut]
+
+
+class AdminReplyIn(BaseModel):
+    content: str = Field(min_length=1, max_length=2000)

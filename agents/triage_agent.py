@@ -31,6 +31,7 @@ from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 load_dotenv()
+from agents.pii import redact_text
 from models import AgentAction, ApprovalStatus, GrievanceCategory, Ticket
 
 # Groq's hosted model catalog turns over: as of this writing it no longer
@@ -77,7 +78,7 @@ def classify_ticket(
         "Classify the complaint below into EXACTLY ONE of these categories "
         "(copy the name verbatim -- do not paraphrase or invent a new one):\n"
         + "\n".join(f"- {name}" for name in category_names)
-        + f"\n\nComplaint narrative:\n\"\"\"\n{ticket.narrative}\n\"\"\"\n\n"
+        + f"\n\nComplaint narrative:\n\"\"\"\n{redact_text(ticket.narrative)}\n\"\"\"\n\n"
         "Also assign a priority (low/medium/high/critical) based on financial "
         "harm, urgency, and whether the customer describes fraud or an "
         "unauthorised transaction."

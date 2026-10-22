@@ -12,11 +12,15 @@ from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from agents.graph import build_graph
+from api.ratelimit import RateLimiter
 from api.schemas import ComplaintStatusOut, ComplaintSubmitOut, ComplaintSubmitRequest
 from database import engine, get_session
 from models import Contact, GrievanceCategory, Org, Ticket
 
 router = APIRouter(prefix="/complaints", tags=["public"])
+
+# Each submission triggers an LLM triage call, so cap how many one client can make.
+_submit_limit = RateLimiter("complaint-submit", calls=10, per_seconds=3600)
 
 
 def _trigger_triage(ticket_id: str) -> None:
@@ -50,7 +54,7 @@ def _get_demo_org(session: Session) -> Org:
     return org
 
 
-@router.post("", response_model=ComplaintSubmitOut, status_code=201)
+@router.post("", response_model=ComplaintSubmitOut, status_code=201, dependencies=[Depends(_submit_limit)])
 def submit_complaint(
     payload: ComplaintSubmitRequest,
     background_tasks: BackgroundTasks,

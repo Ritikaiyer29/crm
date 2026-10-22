@@ -30,6 +30,7 @@ from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 load_dotenv()
+from agents.pii import redact_text
 from models import AgentAction, ApprovalStatus, Deal, DealType, Ticket
 
 GROQ_MODEL = "openai/gpt-oss-120b"
@@ -60,7 +61,7 @@ def propose_next_action(session: Session, deal_id: str) -> AgentAction:
     ).all()
     ticket_summary = (
         "\n".join(
-            f"- [{t.date_received.date()}] {t.status.value}/{t.priority.value}: {t.narrative}"
+            f"- [{t.date_received.date()}] {t.status.value}/{t.priority.value}: {redact_text(t.narrative)}"
             for t in tickets
         )
         or "No ticket history."

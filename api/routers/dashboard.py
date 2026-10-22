@@ -17,7 +17,17 @@ from api.schemas import (
     WeeklyCount,
 )
 from database import get_session
-from models import AgentAction, ApprovalStatus, AppUser, Contact, GrievanceCategory, Ticket, TicketStatus
+from models import (
+    AgentAction,
+    ApprovalStatus,
+    AppUser,
+    Contact,
+    Conversation,
+    ConversationStatus,
+    GrievanceCategory,
+    Ticket,
+    TicketStatus,
+)
 
 router = APIRouter(prefix="/dashboard", tags=["dashboard"])
 
@@ -158,6 +168,12 @@ def dashboard_stats(
         top_categories=top,
         agents=agents,
         pending_approvals=sum(a.pending for a in agents),
+        open_handoffs=session.scalar(
+            select(func.count()).select_from(Conversation).where(
+                Conversation.org_id == org_id, Conversation.status == ConversationStatus.escalated
+            )
+        )
+        or 0,
         upcoming_deadlines=upcoming,
         recent_activity=activity,
     )

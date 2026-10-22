@@ -11,7 +11,7 @@ import os
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
-from api.routers import agent_actions, auth, categories, dashboard, public, tickets
+from api.routers import agent_actions, auth, categories, chat, conversations, dashboard, public, tickets
 
 app = FastAPI(title="Agentic CRM API")
 
@@ -38,6 +38,8 @@ app.include_router(agent_actions.router)
 app.include_router(categories.router)
 app.include_router(public.router)
 app.include_router(dashboard.router)
+app.include_router(chat.router)
+app.include_router(conversations.router)
 
 
 @app.get("/health")
